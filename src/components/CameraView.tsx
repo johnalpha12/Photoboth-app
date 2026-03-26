@@ -19,7 +19,6 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
   const totalPhotos = template.slots.length;
 
   useEffect(() => {
-    // Start camera when component mounts
     async function startCamera() {
       try {
         const isMobile = window.innerWidth < 768;
@@ -47,7 +46,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []); 
+  }, []);
 
   const takeSequence = async () => {
     if (isCapturing) return;
@@ -69,7 +68,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
         const ctx = canvas.getContext('2d');
         
         if (ctx) {
-          // Native raw capture without mathematical cropping
+          // Capture full resolution tanpa crop
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
@@ -77,7 +76,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
           ctx.scale(-1, 1);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
           photos.push(dataUrl);
           setCapturedPhotos([...photos]);
         }
@@ -134,7 +133,6 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
         
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* Countdown Overlay */}
         {countdown !== null && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-md z-20 rounded-2xl sm:rounded-[2rem]">
             <div className="w-32 h-32 sm:w-40 sm:h-40 bg-brand-magenta rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(152,37,152,0.4)] animate-bounce border-[6px] border-white">
@@ -178,7 +176,12 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
             }`}
           >
             {capturedPhotos[i] ? (
-              <img src={capturedPhotos[i]} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
+              // Thumbnail: contain agar tidak dipotong
+              <img 
+                src={capturedPhotos[i]} 
+                alt={`Photo ${i+1}`} 
+                className="w-full h-full object-contain bg-black/5" 
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-brand-navy/30 font-extrabold text-xl sm:text-2xl">
                 {i + 1}
