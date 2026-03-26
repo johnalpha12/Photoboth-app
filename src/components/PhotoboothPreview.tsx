@@ -26,6 +26,7 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
   const containerRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewScale, setPreviewScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const [mode, setMode] = useState<'filter' | 'layout'>('filter');
   const [selectedFilter, setSelectedFilter] = useState('normal');
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
@@ -37,19 +38,27 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        // Find dimensions of the container
-        const availableW = containerRef.current.clientWidth;
-        const availableH = containerRef.current.clientHeight;
+        const mobile = window.innerWidth < 1024;
+        setIsMobile(mobile);
         
-        // padding to ensure it fits comfortably
-        const scaleW = (availableW - 32) / template.width;
-        const scaleH = (availableH - 32) / template.height;
-        setPreviewScale(Math.min(scaleW, scaleH));
+        let availableW = containerRef.current.clientWidth;
+        if (availableW === 0) availableW = window.innerWidth - 32;
+
+        if (mobile) {
+          // Fitting width for mobile exactly
+          const scaleW = availableW / template.width;
+          setPreviewScale(scaleW);
+        } else {
+          // Fitting within 85vh for desktop
+          const availableH = window.innerHeight * 0.85;
+          const scaleW = availableW / template.width;
+          const scaleH = availableH / template.height;
+          setPreviewScale(Math.min(scaleW, scaleH));
+        }
       }
     };
     
     updateScale();
-    // small delay to ensure rendering is complete
     setTimeout(updateScale, 100);
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
@@ -73,7 +82,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
 
   const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>, index: number) => {
     if (!isDragging || activeSlotIndex !== index) return;
-    // Panning offset is visual delta / preview scale
     const dx = (e.clientX - dragStart.current.x) / previewScale;
     const dy = (e.clientY - dragStart.current.y) / previewScale;
     
@@ -110,12 +118,9 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
 
   const drawCustom = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, slotX: number, slotY: number, slotW: number, slotH: number, t: Transform) => {
     const imgRatio = img.width / img.height;
-    // Calculate the size of the uncropped image before object-fit: cover logic is applied 
-    // to the new zoomed scale bounding box.
     const renderBoxW = slotW * t.scale;
     const renderBoxH = slotH * t.scale;
     
-    // Position of the scaled conceptual bounds taking into account translation (t.x, t.y)
     const renderBoxX = slotX + t.x + (slotW - renderBoxW) / 2;
     const renderBoxY = slotY + t.y + (slotH - renderBoxH) / 2;
 
@@ -136,11 +141,8 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
 
     ctx.save();
     ctx.beginPath();
-    // Clip to the strict slot boundary (the hole in the template)
     ctx.rect(slotX, slotY, slotW, slotH);
     ctx.clip();
-    
-    // Draw the image onto the canvas applying our manual translation, scale and object-fit: cover mapping
     ctx.drawImage(img, finalX, finalY, finalW, finalH);
     ctx.restore();
   };
@@ -162,7 +164,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
       const templateImg = await loadImage(template.image);
       const photoImgs = await Promise.all(photos.map(src => loadImage(src)));
 
-      // Apply selected filter to photos only
       ctx.filter = FILTERS.find(f => f.id === selectedFilter)?.css || 'none';
 
       template.slots.forEach((slot, index) => {
@@ -171,7 +172,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
         }
       });
 
-      // Reset filter so template retains original colors
       ctx.filter = 'none';
       ctx.drawImage(templateImg, 0, 0, template.width, template.height);
 
@@ -189,15 +189,18 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
   };
 
   return (
-    <div className="flex flex-col lg:flex-row items-center justify-center min-h-screen relative p-4 lg:p-8 shrink-0 text-brand-navy gap-6 lg:gap-8 w-full">
+    <div className="flex flex-col lg:flex-row items-center lg:items-start justify-center min-h-screen relative p-4 lg:p-8 text-brand-navy gap-6 lg:gap-8 w-full">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-gradient-to-b from-brand-pink/20 via-brand-offwhite to-brand-magenta/10"></div>
       
       {/* LEFT AREA: Preview Box */}
       <div 
         ref={containerRef}
-        className="flex-1 w-full h-[55vh] lg:h-[85vh] flex items-center justify-center relative bg-white/40 backdrop-blur-xl rounded-[2.5rem] lg:rounded-[3rem] border border-white/60 shadow-[0_15px_60px_rgba(228,145,201,0.15)] overflow-hidden shrink-0"
+        className="w-full lg:flex-1 relative flex justify-center lg:items-center shrink-0"
+        style={{ 
+          height: isMobile ? `${template.height * previewScale}px` : '85vh',
+          minHeight: isMobile ? `${template.height * previewScale}px` : 'auto'
+        }}
       >
-        {/* Render Canvas for processing only (hidden) */}
         <canvas ref={canvasRef} className="hidden" />
 
         <div 
@@ -205,9 +208,9 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
             width: template.width, 
             height: template.height, 
             transform: `scale(${previewScale})`,
-            transformOrigin: 'center center'
+            transformOrigin: isMobile ? 'top center' : 'center center'
           }}
-          className="relative bg-white shadow-2xl transition-transform duration-300 pointer-events-none"
+          className={`absolute ${!isMobile ? 'lg:relative' : ''} bg-white shadow-2xl transition-transform duration-300 pointer-events-none overflow-hidden`}
         >
           {/* User Photos Interactive Layer */}
           <div className="absolute inset-0 z-10 pointer-events-auto">
@@ -234,7 +237,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
                   }} 
                   className="transition-[filter] duration-300 origin-center"
                 />
-                {/* Highlight Selection overlay */}
                 {activeSlotIndex === i && (
                   <div className="absolute inset-0 border-[6px] border-brand-magenta shadow-[inset_0_0_30px_rgba(152,37,152,0.4)] pointer-events-none"></div>
                 )}
@@ -242,20 +244,13 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
             ))}
           </div>
 
-          {/* Template Frame Overlays */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={template.image} className="absolute inset-0 w-full h-full pointer-events-none z-20 drop-shadow-sm" alt="frame" />
 
-          {/* Ghost Image overlay to show uncropped areas during layout editing */}
+          {/* Ghost Image overlay */}
           {activeSlotIndex !== null && mode === 'layout' && photos[activeSlotIndex] && (
             <div 
               className="absolute pointer-events-none z-30 opacity-50 mix-blend-luminosity overflow-visible"
-              style={{ 
-                left: template.slots[activeSlotIndex].x, 
-                top: template.slots[activeSlotIndex].y, 
-                width: template.slots[activeSlotIndex].w, 
-                height: template.slots[activeSlotIndex].h 
-              }}
+              style={{ left: template.slots[activeSlotIndex].x, top: template.slots[activeSlotIndex].y, width: template.slots[activeSlotIndex].w, height: template.slots[activeSlotIndex].h }}
             >
               <div className="absolute inset-0 border-2 border-white border-dashed z-40 opacity-70"></div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -273,19 +268,18 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
         </div>
       </div>
 
-      {/* RIGHT AREA: Editing Controls (Sidebar on Desktop, Bottom on Mobile) */}
-      <div className="w-full lg:w-[400px] flex flex-col bg-white/80 backdrop-blur-2xl rounded-[2rem] border-2 border-white/80 shadow-xl shrink-0 h-fit max-h-[85vh] overflow-hidden">
+      {/* RIGHT AREA: Editing Controls */}
+      <div className="w-full lg:w-[400px] flex flex-col bg-white/80 backdrop-blur-2xl rounded-[2rem] border-2 border-white/80 shadow-xl shrink-0 lg:h-fit lg:max-h-[85vh] overflow-hidden mb-10 lg:mb-0 z-40">
         
-        {/* Scrollable Top & Middle Content */}
+        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-5 pb-4">
           <div className="text-center lg:text-left shrink-0">
             <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-magenta to-brand-navy mb-1">
               Sesuaikan Fotomu ✨
             </h2>
-            <p className="text-brand-navy/60 font-medium text-sm leading-relaxed">Pilih filter atau geser/zoom foto di layar agar pas di dalam bingkai.</p>
+            <p className="text-brand-navy/60 font-medium text-sm leading-relaxed">Pilih filter atau geser foto agar pas di kerta fotonya.</p>
           </div>
 
-          {/* Action Modes */}
           <div className="flex bg-brand-offwhite rounded-full p-1.5 border border-brand-pink/30 shadow-inner shrink-0">
             <button 
               className={`flex-1 py-2.5 rounded-full font-bold transition-all ${mode === 'filter' ? 'bg-white text-brand-magenta border border-brand-pink/20 shadow-md transform scale-[1.02]' : 'text-brand-navy/60 hover:text-brand-navy hover:bg-white/50'}`} 
@@ -367,7 +361,7 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
         </div>
 
         {/* Submit Actions (Sticky at bottom) */}
-        <div className="flex flex-col gap-3 p-6 lg:p-8 pt-4 bg-white/40 border-t border-brand-pink/30 shrink-0">
+        <div className="flex flex-col gap-3 p-6 lg:p-8 pt-4 bg-white/40 border-t border-brand-pink/30 shrink-0 mt-auto">
           <button 
             onClick={handleDownload}
             disabled={isProcessing}
