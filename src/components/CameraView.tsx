@@ -22,11 +22,12 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
     // Start camera when component mounts
     async function startCamera() {
       try {
+        const isMobile = window.innerWidth < 768;
         const mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: { 
             facingMode: 'user',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: isMobile ? 1080 : 1920 },
+            height: { ideal: isMobile ? 1920 : 1080 }
           }
         });
         setStream(mediaStream);
@@ -41,14 +42,12 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
 
     startCamera();
 
-    // Cleanup function to stop camera when unmounted
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, []); 
 
   const takeSequence = async () => {
     if (isCapturing) return;
@@ -57,39 +56,33 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
     const photos: string[] = [];
     
     for (let i = 0; i < totalPhotos; i++) {
-      // 3-second countdown for each photo
       for (let c = 3; c > 0; c--) {
         setCountdown(c);
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Capture the photo
       setCountdown(null);
       
       if (videoRef.current && canvasRef.current) {
-        // Here we could flash the screen briefly
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         
-        // Match canvas to video dimensions
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
         if (ctx) {
-          // Mirror the image horizontally because facingMode: 'user' creates a mirrored feed natively, 
-          // so capturing it directly would save a mirrored image incorrectly.
+          // Native raw capture without mathematical cropping
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           
           const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           photos.push(dataUrl);
-          setCapturedPhotos([...photos]); // Update UI with thumbnails
+          setCapturedPhotos([...photos]);
         }
       }
       
-      // Short pause between photos
       if (i < totalPhotos - 1) {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
@@ -97,7 +90,6 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
     
     setIsCapturing(false);
     
-    // Slight delay before completing to let user see the final thumbnail
     setTimeout(() => {
       onCaptureComplete(photos);
     }, 1000);
@@ -122,7 +114,9 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
         </div>
       </div>
 
-      <div className="relative w-full max-w-xl aspect-[3/4] sm:aspect-[4/3] bg-white rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] sm:border-[8px] border-white shadow-[0_15px_40px_rgba(228,145,201,0.2)] flex items-center justify-center z-10 shrink-0">
+      <div 
+        className="relative w-full max-w-xl aspect-[3/4] sm:aspect-[4/3] bg-white rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] sm:border-[8px] border-white shadow-[0_15px_40px_rgba(228,145,201,0.2)] flex items-center justify-center z-10 shrink-0"
+      >
         {!stream && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-offwhite z-10 gap-4">
             <div className="w-10 h-10 border-4 border-brand-pink border-t-brand-magenta rounded-full animate-spin"></div>
@@ -184,7 +178,6 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
             }`}
           >
             {capturedPhotos[i] ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={capturedPhotos[i]} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-brand-navy/30 font-extrabold text-xl sm:text-2xl">

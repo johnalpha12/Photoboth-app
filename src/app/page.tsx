@@ -64,7 +64,7 @@ export default function Home() {
             <span className="text-brand-magenta font-bold tracking-widest text-sm uppercase">Welcome to</span>
           </div>
           <h1 className="text-5xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-magenta to-brand-pink drop-shadow-sm mb-4 pb-2">
-            ✨ J Booth
+            J Booth
           </h1>
           <p className="text-brand-navy/70 font-medium text-lg">Pilih frame favoritmu dan bersiap untuk pose terbaik!</p>
         </div>

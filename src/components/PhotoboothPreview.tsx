@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Template } from "@/config/templates";
 
-// -- TYPES & CONSTANTS --
 interface PhotoboothPreviewProps {
   template: Template;
   photos: string[];
@@ -21,7 +20,6 @@ const FILTERS = [
 ];
 
 export default function PhotoboothPreview({ template, photos, onReset }: PhotoboothPreviewProps) {
-  // -- STATE --
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -34,7 +32,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
     photos.map(() => ({ x: 0, y: 0, scale: 1 }))
   );
 
-  // -- SCALE CALCULATION FOR RESPONSIVENESS --
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
@@ -45,11 +42,9 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
         if (availableW === 0) availableW = window.innerWidth - 32;
 
         if (mobile) {
-          // Fitting width for mobile exactly
           const scaleW = availableW / template.width;
           setPreviewScale(scaleW);
         } else {
-          // Fitting within 85vh for desktop
           const availableH = window.innerHeight * 0.85;
           const scaleW = availableW / template.width;
           const scaleH = availableH / template.height;
@@ -64,7 +59,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
     return () => window.removeEventListener('resize', updateScale);
   }, [template]);
 
-  // -- DRAG & DROP LOGIC --
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, tX: 0, tY: 0 });
 
@@ -105,7 +99,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
     });
   };
 
-  // -- CANVAS DRAWING (DOWNLOAD) --
   const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image();
@@ -285,13 +278,13 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
               className={`flex-1 py-2.5 rounded-full font-bold transition-all ${mode === 'filter' ? 'bg-white text-brand-magenta border border-brand-pink/20 shadow-md transform scale-[1.02]' : 'text-brand-navy/60 hover:text-brand-navy hover:bg-white/50'}`} 
               onClick={() => setMode('filter')}
             >
-              🎨 Filter
+              Filter
             </button>
             <button 
               className={`flex-1 py-2.5 rounded-full font-bold transition-all ${mode === 'layout' ? 'bg-white text-brand-magenta border border-brand-pink/20 shadow-md transform scale-[1.02]' : 'text-brand-navy/60 hover:text-brand-navy hover:bg-white/50'}`} 
               onClick={() => { setMode('layout'); if(activeSlotIndex === null) setActiveSlotIndex(0); }}
             >
-              📐 Tata Letak
+              Tata Letak
             </button>
           </div>
 
