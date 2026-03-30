@@ -13,6 +13,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [capturedPhotos, setCapturedPhotos] = useState<string[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -22,16 +23,36 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
     async function startCamera() {
       try {
         const isMobile = window.innerWidth < 768;
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        const constraints: MediaStreamConstraints = {
           video: { 
-            facingMode: 'user',
+            facingMode: { ideal: 'user' },
             width: { ideal: isMobile ? 1080 : 1920 },
             height: { ideal: isMobile ? 1920 : 1080 }
           }
-        });
+        };
+        
+        const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        streamRef.current = mediaStream;
         setStream(mediaStream);
+        
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
+          
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) {
+              const video = videoRef.current;
+              const videoAspect = video.videoWidth / video.videoHeight;
+              const containerAspect = isMobile ? 3/4 : 4/3;
+              
+              const ratioDiff = Math.abs(videoAspect - containerAspect) / containerAspect;
+              if (ratioDiff > 0.1) {
+                video.style.objectFit = 'contain';
+                video.style.backgroundColor = '#000';
+              } else {
+                video.style.objectFit = 'cover';
+              }
+            }
+          };
         }
       } catch (err) {
         console.error("Error accessing camera:", err);
@@ -42,11 +63,12 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
     startCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       }
     };
-  }, []);
+  }, []); 
 
   const takeSequence = async () => {
     if (isCapturing) return;
@@ -68,7 +90,6 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
         const ctx = canvas.getContext('2d');
         
         if (ctx) {
-          // Capture full resolution tanpa crop
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           
@@ -76,7 +97,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
           ctx.scale(-1, 1);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           photos.push(dataUrl);
           setCapturedPhotos([...photos]);
         }
@@ -114,7 +135,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
       </div>
 
       <div 
-        className="relative w-full max-w-xl aspect-[3/4] sm:aspect-[4/3] bg-white rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] sm:border-[8px] border-white shadow-[0_15px_40px_rgba(228,145,201,0.2)] flex items-center justify-center z-10 shrink-0"
+        className="relative w-full max-w-xl aspect-[3/4] sm:aspect-[4/3] bg-black rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] sm:border-[8px] border-white shadow-[0_15px_40px_rgba(40,90,72,0.12)] flex items-center justify-center z-10 shrink-0"
       >
         {!stream && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-offwhite z-10 gap-4">
@@ -128,14 +149,15 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
           autoPlay 
           playsInline 
           muted 
-          className="w-full h-full object-cover scale-x-[-1] rounded-2xl sm:rounded-[2rem]"
+          className="w-full h-full scale-x-[-1] rounded-2xl sm:rounded-[2rem]"
         />
         
         <canvas ref={canvasRef} className="hidden" />
 
+        {/* Countdown Overlay */}
         {countdown !== null && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-md z-20 rounded-2xl sm:rounded-[2rem]">
-            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-brand-magenta rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(152,37,152,0.4)] animate-bounce border-[6px] border-white">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 bg-brand-magenta rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(40,90,72,0.4)] animate-bounce border-[6px] border-white">
               <span className="text-6xl sm:text-7xl font-extrabold text-white drop-shadow-md">
                 {countdown}
               </span>
@@ -159,7 +181,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
           )}
           
           {isCapturing && countdown === null && (
-            <div className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-brand-magenta to-brand-pink text-white font-extrabold rounded-full shadow-[0_5px_20px_rgba(152,37,152,0.3)] text-base sm:text-lg animate-pulse border-2 border-white">
+            <div className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-brand-magenta to-brand-pink text-white font-extrabold rounded-full shadow-[0_5px_20px_rgba(40,90,72,0.3)] text-base sm:text-lg animate-pulse border-2 border-white">
               ✨ Jepret! ✨
             </div>
           )}
@@ -176,12 +198,7 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
             }`}
           >
             {capturedPhotos[i] ? (
-              // Thumbnail: contain agar tidak dipotong
-              <img 
-                src={capturedPhotos[i]} 
-                alt={`Photo ${i+1}`} 
-                className="w-full h-full object-contain bg-black/5" 
-              />
+              <img src={capturedPhotos[i]} alt={`Photo ${i+1}`} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-brand-navy/30 font-extrabold text-xl sm:text-2xl">
                 {i + 1}

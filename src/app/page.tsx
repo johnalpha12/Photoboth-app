@@ -57,8 +57,7 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 text-brand-navy overflow-hidden relative">
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-gradient-to-b from-brand-pink/20 via-brand-offwhite to-brand-magenta/10"></div>
-      
-      <div className="w-full max-w-5xl bg-white/70 backdrop-blur-2xl border-2 border-white/60 shadow-[0_8px_32px_rgba(228,145,201,0.25)] rounded-[2.5rem] p-6 sm:p-12 my-auto mt-8 sm:mt-12">
+      <div className="w-full max-w-5xl bg-white/70 backdrop-blur-2xl border-2 border-white/60 shadow-[0_8px_32px_rgba(40,90,72,0.15)] rounded-[2.5rem] p-6 sm:p-12 my-auto mt-8 sm:mt-12">
         <div className="text-center mb-10">
           <div className="inline-block bg-white px-6 py-2 rounded-full shadow-sm border border-brand-pink/40 mb-4 transform hover:scale-105 transition-transform duration-300">
             <span className="text-brand-magenta font-bold tracking-widest text-sm uppercase">Welcome to</span>
