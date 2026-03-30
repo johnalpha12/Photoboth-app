@@ -294,7 +294,7 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
         <div className="flex-1 overflow-y-auto p-6 lg:p-8 flex flex-col gap-5 pb-4">
           <div className="text-center lg:text-left shrink-0">
             <h2 className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-magenta to-brand-navy mb-1">
-              Sesuaikan Fotomu ✨
+              Sesuaikan Fotomu
             </h2>
             <p className="text-brand-navy/60 font-medium text-sm leading-relaxed">Pilih filter atau geser foto agar pas di kerta fotonya.</p>
           </div>
