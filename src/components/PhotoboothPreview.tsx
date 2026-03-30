@@ -17,6 +17,7 @@ const FILTERS = [
   { id: 'sepia', name: 'Vintage', css: 'sepia(100%)' },
   { id: 'negative', name: 'Negatif', css: 'invert(100%)' },
   { id: 'vivid', name: 'Cerah', css: 'contrast(120%) saturate(150%)' },
+  { id: 'newspaper', name: 'Koran', css: 'grayscale(100%) contrast(150%) brightness(90%)' },
 ];
 
 export default function PhotoboothPreview({ template, photos, onReset }: PhotoboothPreviewProps) {
@@ -30,7 +31,6 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
   const [transforms, setTransforms] = useState<Transform[]>([]);
 
-  // Ensure transforms array always matches photos length
   useEffect(() => {
     if (transforms.length === photos.length) return;
     
@@ -41,14 +41,12 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
     setTransforms(newTransforms);
   }, [photos.length, transforms]);
 
-  // Load transforms from localStorage on mount
   useEffect(() => {
     const storageKey = `photobooth-transforms-${template.id}`;
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Validate parsed data matches photos length
         if (Array.isArray(parsed) && parsed.length === photos.length) {
           setTransforms(parsed);
           return;
@@ -57,11 +55,9 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
     } catch (e) {
       console.warn('Failed to load transforms from localStorage:', e);
     }
-    // Fallback to default
     setTransforms(photos.map(() => ({ x: 0, y: 0, scale: 1 })));
   }, [template.id, photos.length]);
 
-  // Save transforms to localStorage whenever they change
   useEffect(() => {
     if (transforms.length === 0) return;
     const storageKey = `photobooth-transforms-${template.id}`;
@@ -198,9 +194,9 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
       ctx.filter = 'none';
       ctx.drawImage(templateImg, 0, 0, template.width, template.height);
 
-      const finalDataUrl = canvas.toDataURL('image/png');
+      const finalDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       const link = document.createElement('a');
-      link.download = `jbooth-${template.id}-${Date.now()}.png`;
+      link.download = `jbooth-${template.id}-${Date.now()}.jpg`;
       link.href = finalDataUrl;
       link.click();
     } catch (e) {
@@ -253,7 +249,7 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
                   onPointerUp={handlePointerUp}
                   onPointerLeave={handlePointerUp}
                   style={{ 
-                    width: '100%', height: '100%', objectFit: 'contain',
+                    width: '100%', height: '100%', objectFit: 'cover',
                     transform: `translate(${transforms[i]?.x ?? 0}px, ${transforms[i]?.y ?? 0}px) scale(${transforms[i]?.scale ?? 1})`,
                     filter: FILTERS.find(f => f.id === selectedFilter)?.css,
                     cursor: activeSlotIndex === i ? (isDragging ? 'grabbing' : 'grab') : 'pointer'
@@ -281,7 +277,7 @@ export default function PhotoboothPreview({ template, photos, onReset }: Photobo
                 src={photos[activeSlotIndex]} 
                 className="origin-center"
                 style={{ 
-                  width: '100%', height: '100%', objectFit: 'contain',
+                  width: '100%', height: '100%', objectFit: 'cover',
                   transform: `translate(${transforms[activeSlotIndex].x}px, ${transforms[activeSlotIndex].y}px) scale(${transforms[activeSlotIndex].scale})`,
                   filter: FILTERS.find(f => f.id === selectedFilter)?.css,
                 }} 

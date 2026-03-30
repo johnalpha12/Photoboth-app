@@ -97,12 +97,11 @@ export default function CameraView({ template, onCaptureComplete, onCancel }: Ca
           ctx.scale(-1, 1);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
           photos.push(dataUrl);
           setCapturedPhotos([...photos]);
         }
-      }
-      
+      } 
       if (i < totalPhotos - 1) {
         await new Promise(resolve => setTimeout(resolve, 800));
       }
