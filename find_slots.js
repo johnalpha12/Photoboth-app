@@ -2,77 +2,97 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-async function getSlotBounds(imagePath) {
+async function getAdvancedSlots(imagePath) {
   const image = sharp(imagePath);
-  const {width, height} = await image.metadata();
+  const metadata = await image.metadata();
+  const width = metadata.width;
+  const height = metadata.height;
   const rawData = await image.ensureAlpha().raw().toBuffer();
   
-  const rowTrans = new Int32Array(height);
-  const colTrans = new Int32Array(width);
-  
-  for (let i = 0; i < rawData.length; i += 4) {
-    if (rawData[i + 3] < 128) { // semi or fully transparent
-      const idx = i / 4;
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      rowTrans[y]++;
-      colTrans[x]++;
-    }
-  }
-
-  const yRanges = [];
-  let inRange = false;
-  let start = 0;
-  for (let y = 0; y < height; y++) {
-    if (rowTrans[y] > width * 0.1) {
-      if (!inRange) { inRange = true; start = y; }
-    } else {
-      if (inRange) {
-        yRanges.push({ start, end: y, size: y - start });
-        inRange = false;
-      }
-    }
-  }
-  if (inRange) yRanges.push({ start, end: height-1, size: height-1 - start });
-
-  const xRanges = [];
-  inRange = false;
-  start = 0;
-  for (let x = 0; x < width; x++) {
-    if (colTrans[x] > height * 0.05) {
-      if (!inRange) { inRange = true; start = x; }
-    } else {
-      if (inRange) {
-        xRanges.push({ start, end: x, size: x - start });
-        inRange = false;
-      }
-    }
-  }
-  if (inRange) xRanges.push({ start, end: width-1, size: width-1 - start });
-
+  const visited = new Uint8Array(width * height);
   const slots = [];
-  for (const yr of yRanges) {
-    if (yr.size < height * 0.05) continue; 
-    for (const xr of xRanges) {
-      if (xr.size < width * 0.1) continue;
-      slots.push({
-        x: xr.start,
-        y: yr.start,
-        w: xr.size,
-        h: yr.size
-      });
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = y * width + x;
+      if (visited[idx]) continue;
+      
+      const alpha = rawData[idx * 4 + 3];
+      if (alpha < 60) {
+        let minX = x, maxX = x, minY = y, maxY = y;
+        let count = 0;
+        const queue = [idx];
+        visited[idx] = 1;
+        
+        let qIdx = 0;
+        while(qIdx < queue.length) {
+          const curr = queue[qIdx++];
+          const cx = curr % width;
+          const cy = Math.floor(curr / width);
+          
+          if(cx < minX) minX = cx;
+          if(cx > maxX) maxX = cx;
+          if(cy < minY) minY = cy;
+          if(cy > maxY) maxY = cy;
+          count++;
+          
+          if (cx > 0) {
+            const n = curr - 1;
+            if (!visited[n] && rawData[n * 4 + 3] < 60) {
+              visited[n] = 1;
+              queue.push(n);
+            }
+          }
+          if (cx < width - 1) {
+            const n = curr + 1;
+            if (!visited[n] && rawData[n * 4 + 3] < 60) {
+              visited[n] = 1;
+              queue.push(n);
+            }
+          }
+          if (cy > 0) {
+            const n = curr - width;
+            if (!visited[n] && rawData[n * 4 + 3] < 60) {
+              visited[n] = 1;
+              queue.push(n);
+            }
+          }
+          if (cy < height - 1) {
+            const n = curr + width;
+            if (!visited[n] && rawData[n * 4 + 3] < 60) {
+              visited[n] = 1;
+              queue.push(n);
+            }
+          }
+        }
+        
+        if (count > (width * height * 0.005)) {
+          slots.push({
+            x: minX,
+            y: minY,
+            w: maxX - minX + 1,
+            h: maxY - minY + 1
+          });
+        }
+      }
     }
   }
-  return { width, height, slots };
+  return { width, height, slots: slots.sort((a,b) => {
+    // Sort primarily by Y, then by X
+    if (Math.abs(a.y - b.y) > 20) return a.y - b.y;
+    return a.x - b.x;
+  }) };
 }
 
 async function run() {
   const dir = path.join(__dirname, 'public', 'templates');
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.png'));
   const config = [];
+  
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    const {width, height, slots} = await getSlotBounds(path.join(dir, file));
+    console.log('Processing', file);
+    const {width, height, slots} = await getAdvancedSlots(path.join(dir, file));
     config.push({
       id: `template-${i + 1}`,
       name: `Template ${i + 1}`,
@@ -80,6 +100,27 @@ async function run() {
       width, height, slots
     });
   }
-  console.log(JSON.stringify(config, null, 2));
+  
+  const tsHeader = `export interface Slot {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
-run();
+
+export interface Template {
+  id: string;
+  name: string;
+  image: string;
+  width: number;
+  height: number;
+  slots: Slot[];
+}
+
+export const templates: Template[] = ` + JSON.stringify(config, null, 2) + `;\n`;
+
+  fs.writeFileSync('src/config/templates.ts', tsHeader);
+  console.log('Successfully updated src/config/templates.ts');
+}
+
+run().catch(console.error);

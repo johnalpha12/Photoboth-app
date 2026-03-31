@@ -72,6 +72,48 @@ export const templates: Template[] = [
   {
     "id": "template-3",
     "name": "Template 3",
+    "image": "/templates/gambar (11).png",
+    "width": 736,
+    "height": 1308,
+    "slots": [
+      {
+        "x": 198,
+        "y": 284,
+        "w": 387,
+        "h": 310
+      }
+    ]
+  },
+  {
+    "id": "template-4",
+    "name": "Template 4",
+    "image": "/templates/gambar (12).png",
+    "width": 736,
+    "height": 1308,
+    "slots": [
+      {
+        "x": 63,
+        "y": 49,
+        "w": 433,
+        "h": 337
+      },
+      {
+        "x": 86,
+        "y": 481,
+        "w": 447,
+        "h": 357
+      },
+      {
+        "x": 140,
+        "y": 940,
+        "w": 397,
+        "h": 300
+      }
+    ]
+  },
+  {
+    "id": "template-5",
+    "name": "Template 5",
     "image": "/templates/gambar (2).png",
     "width": 952,
     "height": 2857,
@@ -97,8 +139,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-4",
-    "name": "Template 4",
+    "id": "template-6",
+    "name": "Template 6",
     "image": "/templates/gambar (3).png",
     "width": 1346,
     "height": 2020,
@@ -118,8 +160,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-5",
-    "name": "Template 5",
+    "id": "template-7",
+    "name": "Template 7",
     "image": "/templates/gambar (4).png",
     "width": 1347,
     "height": 2019,
@@ -139,8 +181,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-6",
-    "name": "Template 6",
+    "id": "template-8",
+    "name": "Template 8",
     "image": "/templates/gambar (5).png",
     "width": 953,
     "height": 2854,
@@ -166,8 +208,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-7",
-    "name": "Template 7",
+    "id": "template-9",
+    "name": "Template 9",
     "image": "/templates/gambar (6).png",
     "width": 952,
     "height": 2857,
@@ -193,8 +235,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-8",
-    "name": "Template 8",
+    "id": "template-10",
+    "name": "Template 10",
     "image": "/templates/gambar (7).png",
     "width": 736,
     "height": 1308,
@@ -226,8 +268,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-9",
-    "name": "Template 9",
+    "id": "template-11",
+    "name": "Template 11",
     "image": "/templates/gambar (8).png",
     "width": 736,
     "height": 1308,
@@ -265,8 +307,8 @@ export const templates: Template[] = [
     ]
   },
   {
-    "id": "template-10",
-    "name": "Template 10",
+    "id": "template-12",
+    "name": "Template 12",
     "image": "/templates/gambar (9).png",
     "width": 736,
     "height": 1308,
