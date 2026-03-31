@@ -18,6 +18,7 @@ const FILTERS = [
   { id: 'negative', name: 'Negatif', css: 'invert(100%)' },
   { id: 'vivid', name: 'Cerah', css: 'contrast(120%) saturate(150%)' },
   { id: 'newspaper', name: 'Koran', css: 'grayscale(100%) contrast(150%) brightness(90%)' },
+  { id: 'B&W Soft', name  : 'B&W Soft', css: 'grayscale(100%) contrast(110%) brightness(95%) sepia(80%)' },
 ];
 
 export default function PhotoboothPreview({ template, photos, onReset }: PhotoboothPreviewProps) {
